@@ -10,8 +10,10 @@
 
 #define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
 
-#define WRITE_HIGH DDRD &= 0xFE
-#define WRITE_LOW DDRD |= 0x01
+#define DATA_PIN DDRD
+
+#define WRITE_HIGH DATA_PIN &= 0xFE
+#define WRITE_LOW DATA_PIN |= 0x01
 
 
 void readCommand();
