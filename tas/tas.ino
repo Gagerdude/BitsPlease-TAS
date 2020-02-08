@@ -18,22 +18,26 @@
 #define WRITE_HIGH DDRD &= 0xFE
 #define WRITE_LOW DDRD |= 0x01
 
-
+byte command = 0x00;
 void readCommand();
 void sendByte(byte b);
 
 void setup() {
-
+  Serial.begin(9600);
+  digitalWrite(DATA_PIN, LOW);
+  pinMode(DATA_PIN, INPUT); 
 }
 
 
 void loop() {
-
+  while (!DATA_PIN);
+  readCommand();
+  
 }
 
 void readCommand() {
-  byte command = 0x00; // replace with read
-
+  // replace with read
+  command = readByte();
   switch (command) {
     case 0x00: // STATUS
       sendByte(0x05);
@@ -80,10 +84,4 @@ void sendByte(byte b) {
       mask >>= 1; // 1 cc
     }
   } while (remainingBits); // 3 cycles
-}
-
-void waitForCommand() {
-  while (true) {
-    DELAY_1US;
-  }
 }
