@@ -28,8 +28,46 @@ void loop() {
 
 }
 
+byte readBit() {
+  byte thisBit = 0x00;
+  byte thisBitMask = 0x01;
+
+  // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
+  thisBit |= (DATA_PIN & thisBitMask) << 3;
+  DELAY_CYCLES(13);
+
+  thisBit |= (DATA_PIN & thisBitMask) << 2;
+  DELAY_CYCLES(13);
+
+  thisBit |= (DATA_PIN & thisBitMask) << 1;
+  DELAY_CYCLES(13);
+
+  thisBit |= (DATA_PIN & thisBitMask);
+
+  return thisBit;
+}
+
+byte readByte() {
+  byte inByte = 0x00;
+  short bitsLeftToRead = 8;
+
+  while(bitsLeftToRead){        // 3 cycles when true
+    bitsLeftToRead -= 1;        // 1 cycle
+    byte thisBit = readBit();
+
+    if(thisBit == 0x07){        // 3 cycles when true
+      inByte |= (0x01 << bitsLeftToRead); // 2 cycles
+      DELAY_CYCLES(6);
+    } else {                    // 2 cycles when false
+      DELAY_CYCLES(10);
+    }
+  }
+
+  return inByte;
+}
+
 void readCommand() {
-  byte command = 0x00; // replace with read
+  byte command = readByte()
 
   switch (command) {
     case 0x00: // STATUS
