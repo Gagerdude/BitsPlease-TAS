@@ -17,7 +17,7 @@ void loop() {
 }
 
 void readCommand() {
-  command = 0x00; // replace with read
+  byte command = 0x00; // replace with read
 
   switch (command) {
     case 0x00: // STATUS
@@ -40,4 +40,10 @@ void readCommand() {
 
 void sendCommand(byte b) {
   
+}
+
+void waitForCommand() {
+  while (true) {
+    DELAY_1US; 
+  }
 }
