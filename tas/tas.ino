@@ -1,12 +1,12 @@
 #include "avr/io.h"
 
-#define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
+#define DELAY_CYCLES(n) __builtin_avr_delay_cycles(1000*n);
 
-#define DATA_PIN DDRB
+#define DATA_PIN PINB
 #define DATA_MASK 0x01
 
-#define WRITE_HIGH DATA_PIN &= 0xFE
-#define WRITE_LOW DATA_PIN |= 0x01
+#define WRITE_HIGH PORTB |= 0x01
+#define WRITE_LOW PORTB &= 0xFE
 
 byte command = 0x00;
 void readCommand();
@@ -15,13 +15,29 @@ void sendByte(byte b);
 void setup() {
   Serial.begin(9600);
   Serial.println("Started!");
-  pinMode(DATA_PIN, INPUT);
+  DDRB |= B00000001;
 }
 
 
 void loop() {
-  while (!(DATA_PIN & 0x01));
-  readCommand();
+//  digitalWrite(8,HIGH);
+//  Serial.println(PORTB, HEX);
+  Serial.print('\n');
+  Serial.println(0x00, BIN);
+  sendByte(0x00);
+  delay(1000);
+  Serial.print('\n');
+  Serial.println(0x01, BIN);
+  sendByte(0x01);
+  delay(1000);
+  Serial.print('\n');
+  Serial.println(0x02, BIN);
+  sendByte(0x02);
+  delay(1000);
+  Serial.print('\n');
+  Serial.println(0x03, BIN);
+  sendByte(0x03);
+  delay(1000);
 }
 
 byte readBit() {
@@ -91,29 +107,36 @@ void readCommand() {
 
 void sendByte(byte b) {
   byte remainingBits = 8;
-  byte mask = 0b01111111;
+  byte mask = 0b10000000;
   // write start bit
-  WRITE_LOW; // 2 cycles
-  DELAY_CYCLES(11); // 11 cycles
   do {
+    WRITE_LOW; // 2 cycles
+    DELAY_CYCLES(11); // 11 cycles
+//    Serial.print(PINB&0x01, BIN);
     // If bit is a 1
     if (b & mask) { // 1 cycle (AND)
       // true -> 2 cycles (BREQ)
       WRITE_HIGH; // 2 cycles
       // Subtotal: 11 + 1 + 2 + 2 = 16 CC
       DELAY_CYCLES(30);
+   //      Serial.print(PINB&0x01, BIN);
+ //      Serial.print(PINB&0x01, BIN);
       // Subtotal = 16 + 30 = 46 cc
     }
     else {
       // false -> 1 cycle (BREQ)
       DELAY_CYCLES(31); // 31 cycles
+      //Serial.print(PINB&0x01, BIN);
+  //      Serial.print(PINB&0x01, BIN);
       WRITE_HIGH; // 2 cycles
       // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
     }
+ //    Serial.print(PINB&0x01, BIN);
     remainingBits--; // 1 cycle
     if (remainingBits==0) { // 2 cc if true
     } else { // 1 cc if false
       mask >>= 1; // 1 cc
     }
+    //    Serial.print("\n");
   } while (remainingBits); // 3 cycles
 }
