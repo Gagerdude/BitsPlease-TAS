@@ -13,6 +13,8 @@
 #define DELAY_31CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
 #define D22 PA0
 
+#define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
+
 #define WRITE_HIGH DDRD &= 0xFE
 #define WRITE_LOW DDRD |= 0x01
 
@@ -21,12 +23,12 @@ void readCommand();
 void sendByte(byte b);
 
 void setup() {
-  
+
 }
 
 
 void loop() {
-  
+
 }
 
 void readCommand() {
@@ -56,19 +58,19 @@ void sendByte(byte b) {
   byte mask = 0b01111111;
   // write start bit
   WRITE_LOW; // 2 cycles
-  DELAY_11CC; // 11 cycles
+  DELAY_CYCLES(11); // 11 cycles
   do {
     // If bit is a 1
     if (b & mask) { // 1 cycle (AND)
       // true -> 2 cycles (BREQ)
       WRITE_HIGH; // 2 cycles
       // Subtotal: 11 + 1 + 2 + 2 = 16 CC
-      DELAY_30CC; // 30 cycles
+      DELAY_CYCLES(30);
       // Subtotal = 16 + 30 = 46 cc
     }
     else {
       // false -> 1 cycle (BREQ)
-      DELAY_31CC; // 31 cycles
+      DELAY_CYCLES(31); // 31 cycles
       WRITE_HIGH; // 2 cycles
       // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
     }
