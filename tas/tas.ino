@@ -26,19 +26,18 @@ void loop() {
 
 byte readBit() {
   byte thisBit = 0x00;
-  byte thisBitMask = 0x01;
 
   // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
-  thisBit |= (DATA_PIN & thisBitMask) << 3;
+  thisBit |= (DATA_PIN & 0x01) << 3;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & thisBitMask) << 2;
+  thisBit |= (DATA_PIN & 0x01) << 2;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & thisBitMask) << 1;
+  thisBit |= (DATA_PIN & 0x01) << 1;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & thisBitMask);
+  thisBit |= (DATA_PIN & 0x01);
 
   return thisBit;
 }
