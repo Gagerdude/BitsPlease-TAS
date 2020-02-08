@@ -2,7 +2,8 @@
 
 #define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
 
-#define DATA_PIN DDRD
+#define DATA_PIN DDRB
+#define DATA_MASK 0x01
 
 #define WRITE_HIGH DATA_PIN &= 0xFE
 #define WRITE_LOW DATA_PIN |= 0x01
@@ -13,31 +14,30 @@ void sendByte(byte b);
 
 void setup() {
   Serial.begin(9600);
-  digitalWrite(DATA_PIN, LOW);
+  Serial.println("Started!");
   pinMode(DATA_PIN, INPUT);
 }
 
 
 void loop() {
-  while (!DATA_PIN);
+  while (!(DATA_PIN & 0x01));
   readCommand();
-
 }
 
 byte readBit() {
   byte thisBit = 0x00;
 
   // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
-  thisBit |= (DATA_PIN & 0x01) << 3;
+  thisBit |= (DATA_PIN & DATA_MASK) << 3;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & 0x01) << 2;
+  thisBit |= (DATA_PIN & DATA_MASK) << 2;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & 0x01) << 1;
+  thisBit |= (DATA_PIN & DATA_MASK) << 1;
   DELAY_CYCLES(13);
 
-  thisBit |= (DATA_PIN & 0x01);
+  thisBit |= (DATA_PIN & DATA_MASK);
 
   return thisBit;
 }
@@ -66,19 +66,25 @@ void readCommand() {
 
   switch (command) {
     case 0x00: // STATUS
-      sendByte(0x05);
-      sendByte(0x00);
+      // sendByte(0x05);
+      // sendByte(0x00);
       // sendByte(bitFlags);
+      Serial.println("Got Status");
       break;
     case 0x02: // POLL
       // send button and stick state
+      Serial.println("Got Poll");
       break;
     case 0x03: // READ
+      Serial.println("Got Read");
       break;
     case 0x04: // WRITE
+      Serial.println("Got Write");
       break;
     default:
       // some kind of error handling?
+      Serial.print("Got Something Else: ");
+      Serial.println(command, HEX);
       break;
   }
 }
