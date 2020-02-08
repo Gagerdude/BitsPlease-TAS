@@ -1,6 +1,6 @@
 #include "avr/io.h"
 
-#define DELAY_CYCLES(n) __builtin_avr_delay_cycles(1000*n);
+#define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
 
 #define DATA_PIN PINB
 #define DATA_MASK 0x01
@@ -18,26 +18,27 @@ void setup() {
   DDRB |= B00000001;
 }
 
+byte array[] { 0xFA, 0x12 };
+size_t arrayLen = 2; 
 
 void loop() {
 //  digitalWrite(8,HIGH);
 //  Serial.println(PORTB, HEX);
-  Serial.print('\n');
-  Serial.println(0x00, BIN);
-  sendByte(0x00);
-  delay(1000);
-  Serial.print('\n');
-  Serial.println(0x01, BIN);
-  sendByte(0x01);
-  delay(1000);
-  Serial.print('\n');
-  Serial.println(0x02, BIN);
-  sendByte(0x02);
-  delay(1000);
-  Serial.print('\n');
-  Serial.println(0x03, BIN);
-  sendByte(0x03);
-  delay(1000);
+//  Serial.print('\n');
+//  Serial.println(0x00, BIN);
+//  sendByte(0x00);
+//  delay(1000);
+//  Serial.print('\n');
+//  Serial.println(0x01, BIN);
+  sendBytes(array, arrayLen);
+//  delay(1000);
+//  Serial.print('\n');
+//  Serial.println(0x02, BIN);
+//  delay(1000);
+//  Serial.print('\n');
+//  Serial.println(0x03, BIN);
+//  sendByte(0x03);
+//  delay(1000);
 }
 
 byte readBit() {
@@ -105,38 +106,45 @@ void readCommand() {
   }
 }
 
-void sendByte(byte b) {
-  byte remainingBits = 8;
-  byte mask = 0b10000000;
-  // write start bit
-  do {
-    WRITE_LOW; // 2 cycles
-    DELAY_CYCLES(11); // 11 cycles
-//    Serial.print(PINB&0x01, BIN);
-    // If bit is a 1
-    if (b & mask) { // 1 cycle (AND)
-      // true -> 2 cycles (BREQ)
-      WRITE_HIGH; // 2 cycles
-      // Subtotal: 11 + 1 + 2 + 2 = 16 CC
-      DELAY_CYCLES(30);
-   //      Serial.print(PINB&0x01, BIN);
- //      Serial.print(PINB&0x01, BIN);
-      // Subtotal = 16 + 30 = 46 cc
-    }
-    else {
-      // false -> 1 cycle (BREQ)
-      DELAY_CYCLES(31); // 31 cycles
-      //Serial.print(PINB&0x01, BIN);
+void sendBytes(byte* b, size_t n) {
+  byte remainingBits;
+  byte mask;
+  while (n) {
+    remainingBits = 8;
+    mask = 0b10000000;
+    // write start bit
+    do {
+      WRITE_LOW; // 2 cycles
+      --remainingBits;
+      DELAY_CYCLES(8); // 11 cycles
+  //    Serial.print(PINB&0x01, BIN);
+      // If bit is a 1
+      if (*b & mask) { // 1 cycle (AND)
+        // true -> 2 cycles (BREQ)
+        WRITE_HIGH; // 2 cycles
+        // Subtotal: 11 + 1 + 2 + 2 = 16 CC
+        --n;
+        DELAY_CYCLES(33);
+  //         Serial.print(PINB&0x01, BIN);
+  //       Serial.print(PINB&0x01, BIN);
+        // Subtotal = 16 + 30 = 46 cc
+      }
+      else {
+        // false -> 1 cycle (BREQ)
+        --n;
+        DELAY_CYCLES(30); // 31 cycles
   //      Serial.print(PINB&0x01, BIN);
-      WRITE_HIGH; // 2 cycles
-      // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
-    }
- //    Serial.print(PINB&0x01, BIN);
-    remainingBits--; // 1 cycle
-    if (remainingBits==0) { // 2 cc if true
-    } else { // 1 cc if false
-      mask >>= 1; // 1 cc
-    }
-    //    Serial.print("\n");
-  } while (remainingBits); // 3 cycles
+  //        Serial.print(PINB&0x01, BIN);
+        WRITE_HIGH; // 2 cycles
+        // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
+      }
+  //     Serial.print(PINB&0x01, BIN);
+      if (remainingBits!=0) { 
+        mask >>= 1; // 1 cc
+        DELAY_CYCLES(7);
+      } 
+  //        Serial.print("\n");
+    } while (remainingBits); // 3 cycles
+    ++b;
+  }
 }
