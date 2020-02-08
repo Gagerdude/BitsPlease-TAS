@@ -10,7 +10,6 @@
 
 byte command = 0x00;
 void readCommand();
-void sendByte(byte b);
 
 void setup() {
   Serial.begin(9600);
@@ -18,8 +17,8 @@ void setup() {
   DDRB |= B00000001;
 }
 
-byte array[] { 0xFA, 0x12 };
-size_t arrayLen = 2; 
+byte arr[] { 0x00, 0x02 };
+size_t arrayLen = 2;
 
 void loop() {
 //  digitalWrite(8,HIGH);
@@ -30,7 +29,7 @@ void loop() {
 //  delay(1000);
 //  Serial.print('\n');
 //  Serial.println(0x01, BIN);
-  sendBytes(array, arrayLen);
+  sendBytes(arr, arrayLen);
 //  delay(1000);
 //  Serial.print('\n');
 //  Serial.println(0x02, BIN);
@@ -106,45 +105,31 @@ void readCommand() {
   }
 }
 
-void sendBytes(byte* b, size_t n) {
-  byte remainingBits;
+void sendBytes(const byte* b, size_t n) {
   byte mask;
-  while (n) {
-    remainingBits = 8;
+  while (n!=0) {
+    WRITE_LOW; // 2 cycles
     mask = 0b10000000;
     // write start bit
-    do {
-      WRITE_LOW; // 2 cycles
-      --remainingBits;
-      DELAY_CYCLES(8); // 11 cycles
-  //    Serial.print(PINB&0x01, BIN);
-      // If bit is a 1
-      if (*b & mask) { // 1 cycle (AND)
-        // true -> 2 cycles (BREQ)
+    while (mask!=0) {
+      DELAY_CYCLES(4); // 11 cycles
+      if ((*b) & mask) { // 1 cycle (AND)
         WRITE_HIGH; // 2 cycles
-        // Subtotal: 11 + 1 + 2 + 2 = 16 CC
-        --n;
+        mask >>= 1; // 1 cc
         DELAY_CYCLES(33);
-  //         Serial.print(PINB&0x01, BIN);
-  //       Serial.print(PINB&0x01, BIN);
-        // Subtotal = 16 + 30 = 46 cc
       }
       else {
-        // false -> 1 cycle (BREQ)
-        --n;
-        DELAY_CYCLES(30); // 31 cycles
-  //      Serial.print(PINB&0x01, BIN);
-  //        Serial.print(PINB&0x01, BIN);
-        WRITE_HIGH; // 2 cycles
-        // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
-      }
-  //     Serial.print(PINB&0x01, BIN);
-      if (remainingBits!=0) { 
         mask >>= 1; // 1 cc
-        DELAY_CYCLES(7);
-      } 
-  //        Serial.print("\n");
-    } while (remainingBits); // 3 cycles
+        DELAY_CYCLES(30); // 31 cycles
+        WRITE_HIGH; // 2 cycles
+      }
+      if (mask!=0) {
+        DELAY_CYCLES(10);
+        WRITE_LOW; // 2 cycles
+        DELAY_CYCLES(2);
+      }
+    }  // 3 cycles
     ++b;
+    --n;
   }
 }
