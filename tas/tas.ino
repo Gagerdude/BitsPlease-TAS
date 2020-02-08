@@ -1,12 +1,4 @@
 #include "avr/io.h"
-#include "pins_arduino.h"
-
-#define DELAY_1US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
-#define DELAY_2US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
-#define DELAY_3US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
-#define DELAY_4US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
-
-#define D22 PA0
 
 #define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
 
@@ -15,16 +7,20 @@
 #define WRITE_HIGH DATA_PIN &= 0xFE
 #define WRITE_LOW DATA_PIN |= 0x01
 
-
+byte command = 0x00;
 void readCommand();
 void sendByte(byte b);
 
 void setup() {
-
+  Serial.begin(9600);
+  digitalWrite(DATA_PIN, LOW);
+  pinMode(DATA_PIN, INPUT);
 }
 
 
 void loop() {
+  while (!DATA_PIN);
+  readCommand();
 
 }
 
@@ -67,7 +63,7 @@ byte readByte() {
 }
 
 void readCommand() {
-  byte command = readByte()
+  command = readByte();
 
   switch (command) {
     case 0x00: // STATUS
@@ -115,10 +111,4 @@ void sendByte(byte b) {
       mask >>= 1; // 1 cc
     }
   } while (remainingBits); // 3 cycles
-}
-
-void waitForCommand() {
-  while (true) {
-    DELAY_1US;
-  }
 }
