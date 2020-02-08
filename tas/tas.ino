@@ -1,11 +1,24 @@
+#include "avr/io.h"
+#include "pins_arduino.h"
+
 #define DELAY_1US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
 #define DELAY_2US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
 #define DELAY_3US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
 #define DELAY_4US asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
 
+#define DELAY_11CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
+#define DELAY_14CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
+#define DELAY_18CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
+#define DELAY_30CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
+#define DELAY_31CC asm volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n")
+#define D22 PA0
+
+#define WRITE_HIGH DDRD &= 0xFE
+#define WRITE_LOW DDRD |= 0x01
+
 
 void readCommand();
-void sendByte(byte);
+void sendByte(byte b);
 
 void setup() {
   
@@ -38,12 +51,37 @@ void readCommand() {
   }
 }
 
-void sendCommand(byte b) {
-  
+void sendByte(byte b) {
+  byte remainingBits = 8;
+  byte mask = 0b01111111;
+  // write start bit
+  WRITE_LOW; // 2 cycles
+  DELAY_11CC; // 11 cycles
+  do {
+    // If bit is a 1
+    if (b & mask) { // 1 cycle (AND)
+      // true -> 2 cycles (BREQ)
+      WRITE_HIGH; // 2 cycles
+      // Subtotal: 11 + 1 + 2 + 2 = 16 CC
+      DELAY_30CC; // 30 cycles
+      // Subtotal = 16 + 30 = 46 cc
+    }
+    else {
+      // false -> 1 cycle (BREQ)
+      DELAY_31CC; // 31 cycles
+      WRITE_HIGH; // 2 cycles
+      // Subtotal: 11 + 1 + 1 + 31 + 2 = 46 cc
+    }
+    remainingBits--; // 1 cycle
+    if (remainingBits==0) { // 2 cc if true
+    } else { // 1 cc if false
+      mask >>= 1; // 1 cc
+    }
+  } while (remainingBits); // 3 cycles
 }
 
 void waitForCommand() {
   while (true) {
-    DELAY_1US; 
+    DELAY_1US;
   }
 }
