@@ -1,1 +1,6 @@
+# VSCode Config Files
 .vscode
+
+# Speedrun files
+*.m64
+*.m64.txt
