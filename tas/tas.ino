@@ -2,38 +2,39 @@
 
 #define DELAY_CYCLES(n) __builtin_avr_delay_cycles(n);
 
-#define DATA_PIN PINB
+#define DATA_PIN PIND0
 #define DATA_MASK 0x01
 
 #define WRITE_HIGH PORTB |= 0x01
 #define WRITE_LOW PORTB &= 0xFE
 
-byte command = 0x00;
+volatile byte command = 0x00;
 void readCommand();
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Started!");
-  // DDRB &= 0xfe;
-  pinMode(8, INPUT_PULLUP);
+//  DDRB &= ~(1 << 0);
+//  PORTB |= (1 << 0);
+  
+//  pinMode(8, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(2), readCommand, FALLING);
 }
 
 byte arr[] { 0x00, 0x02 };
 size_t arrayLen = 2;
 
 void loop() {
-  byte test;
-  while (PINB0);
-  test = (PINB0);
-  for(int i = 1; i < 8; i++){
-    test <<= 1;
-    test |= (PINB0);
-  }
-
-  Serial.println(test, BIN);
-
-
-  // readCommand();
+//  sendBytes(arr, 2);
+//  delay(1000);
+if (DATA_PIN)
+{
+  Serial.println(DATA_PIN);
+}
+  //while (DATA_PIN&DATA_MASK) { DELAY_CYCLES(16); }
+//  Serial.println(DATA_PIN&DATA_MASK, HEX);
+  
 }
 
 // byte readBit() {
@@ -81,48 +82,30 @@ void loop() {
 // }
 
 byte readByte() {
-  // byte inByte = 0x00;
-  byte buffer[4];
-  unsigned short bitsLeftToRead = 8;
-
-  byte thisBit;
-
-  while(bitsLeftToRead--){
-    thisBit = 0x01;
-    while(thisBit < 0x10){
-      thisBit <<= 1;
-      thisBit |= (DATA_PIN & DATA_MASK);
-
-      if(thisBit < 0x10)
-        DELAY_CYCLES(11);
-    }
-
-    // inByte <<= 1;
-    switch(thisBit){
-      case 0x11:
-        // 0
-        break;
-      case 0x17:
-        // 1
-        // inByte |= 0x01;
-        break;
-      default:
-        // something bad has happended.
-        break;
-    }
+  byte out = 0x00;
+  int bitsLeftToRead = 8;
+  while(bitsLeftToRead--) {
+    byte cBit[4] {0x00, 0x00, 0x00, 0x00};
+    byte bit = 0x00;
+    int i = 0;
+    do {
+      bit <<= 1;
+      bit |= (PIND & DATA_MASK);
+    } while(i++ < 4);
+    out <<= 1;
+    out += (bit == 0b0111);
   }
-
-  return thisBit & 0x0f;
+  return out;
 }
+
+const byte n64status[] { 0x05, 0x00, 0x02 };
 
 void readCommand() {
   command = readByte();
-
+  Serial.println(command, HEX);
   switch (command) {
     case 0x00: // STATUS
-      // sendByte(0x05);
-      // sendByte(0x00);
-      // sendByte(bitFlags);
+      sendBytes(n64status, 3);
       Serial.println("Got Status");
       break;
     case 0x02: // POLL
@@ -144,6 +127,8 @@ void readCommand() {
 }
 
 void sendBytes(const byte* b, size_t n) {
+  Serial.println(b[0], HEX);
+  Serial.println(b[1], HEX);
   byte mask;
   while (n!=0) {
     WRITE_LOW; // 2 cycles
@@ -170,4 +155,7 @@ void sendBytes(const byte* b, size_t n) {
     ++b;
     --n;
   }
+  WRITE_LOW;
+  DELAY_CYCLES(30);
+  WRITE_HIGH;
 }
