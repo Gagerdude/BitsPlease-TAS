@@ -14,67 +14,105 @@ void readCommand();
 void setup() {
   Serial.begin(9600);
   Serial.println("Started!");
-  DDRB |= B00000001;
+  // DDRB &= 0xfe;
+  pinMode(8, INPUT_PULLUP);
 }
 
 byte arr[] { 0x00, 0x02 };
 size_t arrayLen = 2;
 
 void loop() {
-//  digitalWrite(8,HIGH);
-//  Serial.println(PORTB, HEX);
-//  Serial.print('\n');
-//  Serial.println(0x00, BIN);
-//  sendByte(0x00);
-//  delay(1000);
-//  Serial.print('\n');
-//  Serial.println(0x01, BIN);
-  sendBytes(arr, arrayLen);
-//  delay(1000);
-//  Serial.print('\n');
-//  Serial.println(0x02, BIN);
-//  delay(1000);
-//  Serial.print('\n');
-//  Serial.println(0x03, BIN);
-//  sendByte(0x03);
-//  delay(1000);
+  byte test;
+  while (PINB0);
+  test = (PINB0);
+  for(int i = 1; i < 8; i++){
+    test <<= 1;
+    test |= (PINB0);
+  }
+
+  Serial.println(test, BIN);
+
+
+  // readCommand();
 }
 
-byte readBit() {
-  byte thisBit = 0x00;
+// byte readBit() {
+//   byte thisBit = 0x00;
 
-  // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
-  thisBit |= (DATA_PIN & DATA_MASK) << 3;
-  DELAY_CYCLES(13);
+//   // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
+//   thisBit |= (DATA_PIN & DATA_MASK) << 3;
+//   DELAY_CYCLES(10);
 
-  thisBit |= (DATA_PIN & DATA_MASK) << 2;
-  DELAY_CYCLES(13);
+//   thisBit |= (DATA_PIN & DATA_MASK) << 2;
+//   DELAY_CYCLES(11);
 
-  thisBit |= (DATA_PIN & DATA_MASK) << 1;
-  DELAY_CYCLES(13);
+//   thisBit |= (DATA_PIN & DATA_MASK) << 1;
+//   DELAY_CYCLES(12);
 
-  thisBit |= (DATA_PIN & DATA_MASK);
+//   thisBit |= (DATA_PIN & DATA_MASK);
+//   DELAY_CYCLES(13);
 
-  return thisBit;
-}
+//   return thisBit;
+// }
+
+// byte readByte() {
+//   byte inByte = 0x00;
+//   unsigned short bitsLeftToRead = 8;
+
+//   byte thisBit;
+
+
+//   do {        // 3 cycles when true
+//     thisBit = readBit();
+//     inByte <<= 1;
+//     if(thisBit == 0x07){        // 3 cycles when true
+//       ++inByte;
+//       DELAY_CYCLES(7);
+//     } else if(thisBit == 0x01) {                    // 2 cycles when false
+//       DELAY_CYCLES(9);
+//     } else {
+//       Serial.println(thisBit, BIN);
+//     }
+
+//     bitsLeftToRead -= 1;        // 1 cycle
+//   } while(bitsLeftToRead);
+
+//   return inByte;
+// }
 
 byte readByte() {
-  byte inByte = 0x00;
-  short bitsLeftToRead = 8;
+  // byte inByte = 0x00;
+  byte buffer[4];
+  unsigned short bitsLeftToRead = 8;
 
-  while(bitsLeftToRead){        // 3 cycles when true
-    bitsLeftToRead -= 1;        // 1 cycle
-    byte thisBit = readBit();
+  byte thisBit;
 
-    if(thisBit == 0x07){        // 3 cycles when true
-      inByte |= (0x01 << bitsLeftToRead); // 2 cycles
-      DELAY_CYCLES(6);
-    } else {                    // 2 cycles when false
-      DELAY_CYCLES(10);
+  while(bitsLeftToRead--){
+    thisBit = 0x01;
+    while(thisBit < 0x10){
+      thisBit <<= 1;
+      thisBit |= (DATA_PIN & DATA_MASK);
+
+      if(thisBit < 0x10)
+        DELAY_CYCLES(11);
+    }
+
+    // inByte <<= 1;
+    switch(thisBit){
+      case 0x11:
+        // 0
+        break;
+      case 0x17:
+        // 1
+        // inByte |= 0x01;
+        break;
+      default:
+        // something bad has happended.
+        break;
     }
   }
 
-  return inByte;
+  return thisBit & 0x0f;
 }
 
 void readCommand() {
@@ -100,7 +138,7 @@ void readCommand() {
     default:
       // some kind of error handling?
       Serial.print("Got Something Else: ");
-      Serial.println(command, HEX);
+      Serial.println(command, BIN);
       break;
   }
 }
