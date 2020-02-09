@@ -5,10 +5,11 @@
 #define DATA_PIN PIND0
 #define DATA_MASK 0x01
 
-#define WRITE_HIGH PORTB |= 0x01
-#define WRITE_LOW PORTB &= 0xFE
+#define WRITE_HIGH PORTD |= 0x01
+#define WRITE_LOW PORTD &= 0xFE
 
 volatile byte command = 0x00;
+bool firstRun = true;
 void readCommand();
 
 void setup() {
@@ -17,8 +18,8 @@ void setup() {
 //  DDRB &= ~(1 << 0);
 //  PORTB |= (1 << 0);
   
-//  pinMode(8, INPUT_PULLUP);
-  pinMode(2, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+//  pinMode(2, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(2), readCommand, FALLING);
 }
 
@@ -26,60 +27,14 @@ byte arr[] { 0x00, 0x02 };
 size_t arrayLen = 2;
 
 void loop() {
-//  sendBytes(arr, 2);
-//  delay(1000);
-if (DATA_PIN)
-{
-  Serial.println(DATA_PIN);
+  if (firstRun) {
+    firstRun = false;
+    sendBytes(arr, 1);
+    delay(10);
+  }
+  sendBytes(&arr[1], 1);
+  delay(10);
 }
-  //while (DATA_PIN&DATA_MASK) { DELAY_CYCLES(16); }
-//  Serial.println(DATA_PIN&DATA_MASK, HEX);
-  
-}
-
-// byte readBit() {
-//   byte thisBit = 0x00;
-
-//   // guestimating 3 cycles for each? 1 and, 1 shift, one or compound
-//   thisBit |= (DATA_PIN & DATA_MASK) << 3;
-//   DELAY_CYCLES(10);
-
-//   thisBit |= (DATA_PIN & DATA_MASK) << 2;
-//   DELAY_CYCLES(11);
-
-//   thisBit |= (DATA_PIN & DATA_MASK) << 1;
-//   DELAY_CYCLES(12);
-
-//   thisBit |= (DATA_PIN & DATA_MASK);
-//   DELAY_CYCLES(13);
-
-//   return thisBit;
-// }
-
-// byte readByte() {
-//   byte inByte = 0x00;
-//   unsigned short bitsLeftToRead = 8;
-
-//   byte thisBit;
-
-
-//   do {        // 3 cycles when true
-//     thisBit = readBit();
-//     inByte <<= 1;
-//     if(thisBit == 0x07){        // 3 cycles when true
-//       ++inByte;
-//       DELAY_CYCLES(7);
-//     } else if(thisBit == 0x01) {                    // 2 cycles when false
-//       DELAY_CYCLES(9);
-//     } else {
-//       Serial.println(thisBit, BIN);
-//     }
-
-//     bitsLeftToRead -= 1;        // 1 cycle
-//   } while(bitsLeftToRead);
-
-//   return inByte;
-// }
 
 byte readByte() {
   byte out = 0x00;
@@ -105,30 +60,34 @@ void readCommand() {
   Serial.println(command, HEX);
   switch (command) {
     case 0x00: // STATUS
+      DDRD |= 1;
       sendBytes(n64status, 3);
       Serial.println("Got Status");
+      DDRD &= ~1;
       break;
     case 0x02: // POLL
+      DDRD |= 1;
       // send button and stick state
       Serial.println("Got Poll");
+      DDRD |= 1;
       break;
     case 0x03: // READ
-      Serial.println("Got Read");
+//      Serial.println("Got Read");
       break;
     case 0x04: // WRITE
-      Serial.println("Got Write");
+//      Serial.println("Got Write");
       break;
     default:
       // some kind of error handling?
-      Serial.print("Got Something Else: ");
-      Serial.println(command, BIN);
+//      Serial.print("Got Something Else: ");
+//      Serial.println(command, BIN);
       break;
   }
 }
 
 void sendBytes(const byte* b, size_t n) {
-  Serial.println(b[0], HEX);
-  Serial.println(b[1], HEX);
+//  Serial.println(b[0], HEX);
+//  Serial.println(b[1], HEX);
   byte mask;
   while (n!=0) {
     WRITE_LOW; // 2 cycles
